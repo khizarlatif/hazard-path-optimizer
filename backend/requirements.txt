@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+rasterio
+numpy
+networkx
+geopandas
+shapely
+scikit-image
