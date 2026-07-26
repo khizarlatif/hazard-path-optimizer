@@ -20,45 +20,25 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
 
-  // Handle slider change (ensure sum is 1.0)
+  // Fetch real road on initial load
+  useEffect(() => {
+    const fetchRealRoad = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const response = await axios.get(`${apiUrl}/api/real-road`);
+        setRealRoadData(response.data);
+      } catch (error) {
+        console.error("Failed to load real road data:", error);
+      }
+    };
+    fetchRealRoad();
+  }, []);
+
+  // Handle slider change (allow independent changes)
   const handleWeightChange = (key, value) => {
-    const newValue = parseFloat(value);
-    const oldValue = weights[key];
-    const diff = newValue - oldValue;
-    
-    // Sum of the other weights
-    const othersSum = 1.0 - oldValue;
-    
-    let newWeights = { ...weights };
-    newWeights[key] = newValue;
-
-    // If there are other weights, scale them proportionally
-    if (othersSum > 0) {
-      for (let k in newWeights) {
-        if (k !== key) {
-          // Scale proportional to their previous contribution
-          newWeights[k] = Math.max(0, weights[k] - diff * (weights[k] / othersSum));
-        }
-      }
-    } else {
-      // If others sum to 0 (all weight was in this key previously)
-      // and we are decreasing it, distribute the diff equally
-      const remainingKeys = Object.keys(newWeights).filter(k => k !== key);
-      for (let k of remainingKeys) {
-        newWeights[k] = Math.max(0, -diff / remainingKeys.length);
-      }
-    }
-
-    // Fix rounding errors to ensure exact sum of 1.0
-    const total = Object.values(newWeights).reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      for (let k in newWeights) {
-        newWeights[k] = newWeights[k] / total;
-      }
-    }
-    
-    setIsCustom(true);
+    const newWeights = { ...weights, [key]: parseFloat(value) };
     setWeights(newWeights);
+    setIsCustom(true); 
   };
 
   const calculatePath = async () => {
@@ -67,9 +47,6 @@ function App() {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await axios.post(`${apiUrl}/api/calculate-path`, weights);
       setPathData(response.data.path);
-      if (response.data.real_road) {
-        setRealRoadData(response.data.real_road);
-      }
     } catch (error) {
       console.error("Error calculating path:", error);
       alert("Failed to calculate path. Please ensure backend is running.");

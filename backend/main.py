@@ -37,7 +37,8 @@ start_rc = None
 end_rc = None
 
 # Base path relative to main.py
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# If running in Hugging Face space, SPACE_ID environment variable is set
+BASE_DIR = "." if os.environ.get("SPACE_ID") else os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 @app.on_event("startup")
 async def startup_event():
@@ -148,6 +149,12 @@ async def calculate_path(weights: Weights):
         },
         "real_road": kkh_geojson
     }
+
+@app.get("/api/real-road")
+async def get_real_road():
+    if kkh_geojson is None:
+        raise HTTPException(status_code=404, detail="Real road data not loaded")
+    return kkh_geojson
 
 if __name__ == "__main__":
     import uvicorn
